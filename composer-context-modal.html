@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ajiro Agent — Composer Context Modal</title>
+<!--
+  Typography note: "OpenAI Sans" is a proprietary typeface — its font files
+  weren't included in the uploaded asset bundle (only PNG/SVG mockups), so
+  they can't be embedded here. --font-ui below is scoped to the modal only
+  (see .screen) and named after the real family so swapping in the actual
+  @font-face / expo-font asset later is a one-line change. Until then it
+  falls back to the same humanist system-UI stack ChatGPT's own apps fall
+  back to, which is a close visual stand-in.
+-->
+<style>
+  :root{
+    --font-ui:'OpenAI Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --sheet-bg:#212121;
+    --row-icon-bg:#414141;
+    --opt-card-bg:#3a3a3a;
+    --opt-icon-bg:#464646;
+    --accent:#5b93e0;
+    --accent-strong:#3b7ee8;
+    --text-strong:#f2f2f2;
+    --text-main:#F5F5F7;
+    --text-dim:#9c9c9c;
+    --handle:#5a5a5e;
+    --border-soft:#3A3A3C;
+    --badge-bg:#1c1c1c;
+    --badge-text:#cfcfcf;
+    --amber-bg:#2b2318;
+    --amber-text:#e0a23c;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0;
+    background:#0e0e10;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;
+    color:#e8e8ea;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:36px 16px 60px;
+  }
+  .caption{
+    text-align:center;
+    max-width:420px;
+    margin-bottom:22px;
+  }
+  .caption h1{font-size:15px; font-weight:600; margin:0 0 4px; color:#f2f2f2;}
+  .caption p{font-size:12.5px; color:#8a8a90; margin:0; line-height:1.5;}
+
+  .device{
+    position:relative;
+    width:360px;
+    height:740px;
+    background:#000;
+    border-radius:46px;
+    padding:10px;
+    box-shadow:0 30px 60px rgba(0,0,0,.55), 0 0 0 1px #050505;
+    flex-shrink:0;
+  }
+  .screen{
+    position:relative;
+    width:100%;
+    height:100%;
+    border-radius:38px;
+    overflow:hidden;
+    background:#171717;
+    display:flex;
+    flex-direction:column;
+    font-family:var(--font-ui); /* scoped to the modal's screen, not the whole page */
+  }
+  .statusbar{
+    height:30px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 24px;
+    font-size:12px;
+    font-weight:600;
+    color:#f2f2f2;
+    position:relative;
+    z-index:5;
+  }
+  .notch{
+    position:absolute;
+    top:6px; left:50%; transform:translateX(-50%);
+    width:90px; height:18px;
+    background:#000;
+    border-radius:12px;
+  }
+  .statusicons{display:flex; align-items:center; gap:4px;}
+  .statusicons svg{width:15px; height:15px; stroke:#f2f2f2; fill:none;}
+
+  .chat-area{
+    flex:1;
+    position:relative;
+    overflow:hidden;
+    padding:14px 16px 0;
+  }
+  .msg-user{
+    margin-left:auto;
+    max-width:74%;
+    background:#2c2c2e;
+    color:#f0f0f0;
+    font-size:13.5px;
+    line-height:1.45;
+    padding:10px 13px;
+    border-radius:16px 16px 4px 16px;
+    margin-bottom:14px;
+  }
+  .msg-assistant{
+    font-size:13.5px;
+    line-height:1.6;
+    color:#c8c8cc;
+    max-width:88%;
+    margin-bottom:6px;
+  }
+  .msg-assistant .line{height:9px; background:#26262a; border-radius:5px; margin-bottom:7px;}
+  .msg-assistant .line:nth-child(1){width:92%;}
+  .msg-assistant .line:nth-child(2){width:78%;}
+  .msg-assistant .line:nth-child(3){width:55%;}
+
+  .composer-wrap{
+    flex-shrink:0;
+    padding:8px 12px 14px;
+    background:#171717;
+    position:relative;
+    z-index:20;
+  }
+  .composer-bar{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:#232325;
+    border:1px solid #303032;
+    border-radius:26px;
+    padding:6px 8px 6px 6px;
+  }
+  .plus-btn{
+    width:38px; height:38px; border-radius:50%;
+    background:#2f2f31; border:1px solid #3a3a3c;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; cursor:pointer;
+    transition:transform .12s ease, background .12s ease;
+  }
+  .plus-btn:active{transform:scale(0.9); background:#3a3a3c;}
+  .plus-btn svg{width:18px; height:18px; stroke:#f2f2f2;}
+  .composer-input{
+    flex:1;
+    font-size:13.5px;
+    color:#77777c;
+  }
+  .composer-right{display:flex; align-items:center; gap:2px;}
+  .icon-btn{width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;}
+  .icon-btn svg{width:17px; height:17px; stroke:#c9c9cc;}
+  .send-btn{background:#e8e8ea;}
+  .send-btn svg{stroke:#171717;}
+
+  .backdrop{
+    position:absolute; inset:0;
+    background:rgba(0,0,0,0.5);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease;
+    z-index:24;
+  }
+  .backdrop.show{opacity:1; pointer-events:auto;}
+
+  .sheet{
+    position:absolute;
+    left:0; right:0; bottom:0;
+    height:0px;
+    background:var(--sheet-bg);
+    border-radius:26px 26px 0 0;
+    box-shadow:0 -8px 28px rgba(0,0,0,.45);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    z-index:25;
+    border-top:1px solid rgba(255,255,255,0.06);
+  }
+  .sheet.dragging{box-shadow:0 -14px 34px rgba(0,0,0,.6);}
+  .sheet-handle-zone{
+    flex-shrink:0;
+    height:26px;
+    display:flex; align-items:center; justify-content:center;
+    touch-action:none;
+    cursor:grab;
+  }
+  .sheet-handle{width:36px; height:4px; border-radius:2px; background:var(--handle);}
+
+  .sheet-content{
+    flex:1;
+    overflow-y:auto;
+    overflow-x:hidden;
+    touch-action:pan-y;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:24px;
+  }
+  .sheet-content::-webkit-scrollbar{display:none;}
+
+  .screen-pane{display:none;}
+  .screen-pane.active{display:block;}
+
+  .main-row{
+    display:flex; align-items:center; gap:14px;
+    height:64px; padding:0 16px;
+    cursor:pointer;
+  }
+  .main-row:active{background:rgba(255,255,255,0.035);}
+  .main-icon-circle{
+    width:40px; height:40px; border-radius:50%;
+    background:var(--row-icon-bg);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .main-icon-circle svg{width:20px; height:20px; stroke:var(--text-strong); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .main-label{font-size:17px; font-weight:400; color:var(--text-main);}
+
+  .sub-header{
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+    padding:6px 16px 18px;
+  }
+  .back-btn{
+    position:absolute; left:16px; top:0;
+    width:36px; height:36px; border-radius:50%;
+    background:var(--opt-icon-bg);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .back-btn:active{background:#525252;}
+  .back-btn svg{width:17px; height:17px; stroke:var(--text-strong); fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round;}
+  .sub-title{font-weight:600; font-size:17px; color:var(--text-strong);}
+
+  .opt-card{
+    display:flex; align-items:center; gap:13px;
+    background:var(--opt-card-bg);
+    border-radius:16px;
+    padding:13px 14px;
+    margin:0 16px 10px;
+    cursor:pointer;
+    transition:background .12s ease;
+  }
+  .opt-card:active{background:#444;}
+  .opt-icon{
+    width:40px; height:40px; border-radius:50%;
+    background:var(--opt-icon-bg);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    transition:background .18s ease;
+  }
+  .opt-icon.active{background:var(--accent);}
+  .opt-icon svg{width:19px; height:19px; stroke:var(--text-strong); fill:none; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round;}
+  .opt-text{flex:1; min-width:0;}
+  .opt-title-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .opt-title{font-weight:400; font-size:15px; color:var(--text-strong); transition:color .15s ease, font-weight .15s ease;}
+  .opt-title.label-medium{font-weight:500;}
+  .opt-title.selected{color:var(--accent);}
+  .opt-desc{font-weight:400; font-size:12.5px; color:var(--text-dim); margin-top:3px; line-height:1.4;}
+  .opt-check{width:19px; height:19px; stroke:var(--accent); fill:none; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; opacity:0; transform:scale(.6); transition:opacity .15s ease, transform .15s ease;}
+  .opt-check.show{opacity:1; transform:scale(1);}
+  .badge{font-weight:400; font-size:11px; padding:3px 9px; border-radius:10px; background:var(--badge-bg); color:var(--badge-text); white-space:nowrap;}
+  .badge.amber{background:var(--amber-bg); color:var(--amber-text);}
+  .opt-tags{margin-top:8px; display:flex; flex-direction:column; gap:6px;}
+  .opt-tags-row{display:flex; flex-wrap:wrap; align-items:center; gap:14px;}
+  .opt-tag{display:inline-flex; align-items:center; gap:5px; font-weight:400; font-size:11px; color:var(--text-dim); white-space:nowrap;}
+  .opt-tag svg{width:13px; height:13px; stroke:var(--text-dim); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0;}
+
+  .opt-flat{
+    background:var(--opt-card-bg);
+    border-radius:16px;
+    padding:15px 16px;
+    margin:0 16px 10px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    cursor:pointer;
+  }
+  .opt-flat:active{background:#444;}
+
+  .toggle{width:42px; height:24px; border-radius:12px; background:var(--badge-bg); position:relative; flex-shrink:0; cursor:pointer; transition:background .18s ease;}
+  .toggle.on{background:var(--accent-strong);}
+  .toggle .thumb{position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#f5f5f5; transition:left .18s ease;}
+  .toggle.on .thumb{left:20px;}
+
+  .section-label{
+    font-weight:500; font-size:11.5px; color:#77777a;
+    letter-spacing:.02em;
+    padding:6px 20px 8px;
+  }
+
+  .controls{
+    width:360px;
+    margin-top:20px;
+  }
+  .state-row{
+    display:flex; align-items:center; justify-content:space-between;
+    background:#1a1a1c; border:1px solid #29292b;
+    border-radius:10px; padding:9px 13px;
+    font-size:11.5px; margin-bottom:10px;
+  }
+  .state-row span:first-child{color:#8a8a90;}
+  .state-row span:last-child{color:#e8e8ea; font-weight:600; font-family:ui-monospace,monospace;}
+  .btn-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px;}
+  .demo-btn{
+    background:#1a1a1c; border:1px solid #29292b; color:#d8d8dc;
+    font-size:12px; font-weight:500; padding:10px; border-radius:9px;
+    cursor:pointer; font-family:inherit;
+  }
+  .demo-btn:active{background:#242426;}
+</style>
+</head>
+<body>
+
+<div class="caption">
+  <h1>Ajiro Agent — composer context modal</h1>
+  <p>Live gesture-driven bottom sheet. Typography now runs on the OpenAI Sans type scale (Regular/Medium/Semibold), Agent Mode's "Agent" option shows its capability tags, and the sheet still fully covers the composer bar and resizes to fit each section's content. Drag the handle, or any empty row area, up and down. Tap a row to drill in; tap the back arrow to return.</p>
+</div>
+
+<div class="device">
+  <div class="screen">
+    <div class="notch"></div>
+    <div class="statusbar">
+      <span>9:41</span>
+      <div class="statusicons">
+        <svg viewBox="0 0 24 24"><path d="M2 12a10 10 0 0 1 20 0" stroke-width="2" stroke-linecap="round"/></svg>
+        <svg viewBox="0 0 24 24"><rect x="2" y="7" width="18" height="10" rx="2" stroke-width="2"/><path d="M22 10v4" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+
+    <div class="chat-area">
+      <div class="msg-user">Can you help me refactor the session manager into its own module?</div>
+      <div class="msg-assistant">
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+      </div>
+    </div>
+
+    <div class="backdrop" id="backdrop"></div>
+
+    <div class="sheet" id="sheet">
+      <div class="sheet-handle-zone" id="handleZone">
+        <div class="sheet-handle"></div>
+      </div>
+
+      <div class="sheet-content" id="sheetContent">
+
+        <div class="screen-pane active" data-pane="main">
+          <div class="main-row" data-goto="attachment">
+            <div class="main-icon-circle"><svg viewBox="0 0 24 24"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></svg></div>
+            <div class="main-label">Attachment</div>
+          </div>
+          <div class="main-row" data-action="leaf">
+            <div class="main-icon-circle"><svg viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="M2 10h20"/></svg></div>
+            <div class="main-label">Open Project</div>
+          </div>
+          <div class="main-row" data-action="leaf">
+            <div class="main-icon-circle"><svg viewBox="0 0 24 24"><path d="M15.536 11.293a1 1 0 0 0 0 1.414l2.376 2.377a1 1 0 0 0 1.414 0l2.377-2.377a1 1 0 0 0 0-1.414l-2.377-2.377a1 1 0 0 0-1.414 0z"/><path d="M2.297 11.293a1 1 0 0 0 0 1.414l2.377 2.377a1 1 0 0 0 1.414 0l2.377-2.377a1 1 0 0 0 0-1.414L6.088 8.916a1 1 0 0 0-1.414 0z"/><path d="M8.916 17.912a1 1 0 0 0 0 1.415l2.377 2.376a1 1 0 0 0 1.414 0l2.377-2.376a1 1 0 0 0 0-1.415l-2.377-2.376a1 1 0 0 0-1.414 0z"/><path d="M8.916 4.674a1 1 0 0 0 0 1.414l2.377 2.376a1 1 0 0 0 1.414 0l2.377-2.376a1 1 0 0 0 0-1.414l-2.377-2.377a1 1 0 0 0-1.414 0z"/></svg></div>
+            <div class="main-label">Model</div>
+          </div>
+          <div class="main-row" data-goto="skills">
+            <div class="main-icon-circle"><svg viewBox="0 0 24 24"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg></div>
+            <div class="main-label">Skills</div>
+          </div>
+          <div class="main-row" data-goto="websearch">
+            <div class="main-icon-circle"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></div>
+            <div class="main-label">Web Search</div>
+          </div>
+          <div class="main-row" data-goto="effort">
+            <div class="main-icon-circle"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 1 7.38 16.75"/><path d="M12 6v6l4 2"/><path d="M2.5 8.875a10 10 0 0 0-.5 3"/><path d="M2.83 16a10 10 0 0 0 2.43 3.4"/><path d="M4.636 5.235a10 10 0 0 1 .891-.857"/><path d="M8.644 21.42a10 10 0 0 0 7.631-.38"/></svg></div>
+            <div class="main-label">Effort</div>
+          </div>
+          <div class="main-row" data-goto="agent">
+            <div class="main-icon-circle"><svg viewBox="0 0 24 24"><path d="M6 16c5 0 7-8 12-8a4 4 0 0 1 0 8c-5 0-7-8-12-8a4 4 0 1 0 0 8"/></svg></div>
+            <div class="main-label">Agent Mode</div>
+          </div>
+          <div class="main-row" data-goto="approval">
+            <div class="main-icon-circle"><svg viewBox="0 0 24 24"><path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/></svg></div>
+            <div class="main-label">Approval Mode</div>
+          </div>
+        </div>
+
+        <div class="screen-pane" data-pane="attachment">
+          <div class="sub-header">
+            <div class="sub-title">Attachment</div>
+          </div>
+          <div class="opt-card" data-action="leaf">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/></svg></div>
+            <div class="opt-text"><div class="opt-title">Upload File</div></div>
+          </div>
+          <div class="opt-card" data-action="leaf">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></svg></div>
+            <div class="opt-text"><div class="opt-title">Take Photo</div></div>
+          </div>
+          <div class="opt-card" data-action="leaf">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>
+            <div class="opt-text"><div class="opt-title">Select from Gallery</div></div>
+          </div>
+          <div class="opt-card" data-back>
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
+            <div class="opt-text"><div class="opt-title">Cancel</div></div>
+          </div>
+        </div>
+
+        <div class="screen-pane" data-pane="agent">
+          <div class="sub-header">
+            <div class="back-btn" data-back><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></div>
+            <div class="sub-title">Agent Mode</div>
+          </div>
+          <div class="opt-card" data-select="agent" data-group="agentmode" data-value="agent">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><path d="M6 16c5 0 7-8 12-8a4 4 0 0 1 0 8c-5 0-7-8-12-8a4 4 0 1 0 0 8"/></svg></div>
+            <div class="opt-text">
+              <div class="opt-title">Agent</div>
+              <div class="opt-desc">Agent can use tools and environment to complete tasks automatically</div>
+              <div class="opt-tags">
+                <div class="opt-tags-row">
+                  <span class="opt-tag"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/></svg>Tool calls</span>
+                  <span class="opt-tag"><svg viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>Web search</span>
+                  <span class="opt-tag"><svg viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>File access</span>
+                </div>
+                <div class="opt-tags-row">
+                  <span class="opt-tag"><svg viewBox="0 0 24 24"><path d="M12 19h8"/><path d="m4 17 6-6-6-6"/></svg>Runtime env</span>
+                </div>
+              </div>
+            </div>
+            <svg class="opt-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <div class="opt-card" data-select="agent" data-group="agentmode" data-value="chat">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/></svg></div>
+            <div class="opt-text">
+              <div class="opt-title">Chat</div>
+              <div class="opt-desc">No runtime environment or autonomy; uses fewer tokens</div>
+            </div>
+            <svg class="opt-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+        </div>
+
+        <div class="screen-pane" data-pane="approval">
+          <div class="sub-header">
+            <div class="back-btn" data-back><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></div>
+            <div class="sub-title">Approval Mode</div>
+          </div>
+          <div class="opt-card" data-select="agent" data-group="approvalmode" data-value="auto">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><path d="M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z"/></svg></div>
+            <div class="opt-text">
+              <div class="opt-title">Auto Approve</div>
+              <div class="opt-desc">Automatically run tools except non-bypassable safety checks</div>
+            </div>
+            <svg class="opt-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <div class="opt-card" data-select="agent" data-group="approvalmode" data-value="allow">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/></svg></div>
+            <div class="opt-text">
+              <div class="opt-title">Allow List</div>
+              <div class="opt-desc">Only automatically run tools you have explicitly remembered</div>
+            </div>
+            <svg class="opt-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <div class="opt-card" data-select="agent" data-group="approvalmode" data-value="manual">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></div>
+            <div class="opt-text">
+              <div class="opt-title">Manual</div>
+              <div class="opt-desc">Ask whenever a tool policy requires your approval</div>
+            </div>
+            <svg class="opt-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+        </div>
+
+        <div class="screen-pane" data-pane="websearch">
+          <div class="sub-header">
+            <div class="back-btn" data-back><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></div>
+            <div class="sub-title">Web Search</div>
+          </div>
+          <div class="opt-card" data-select="agent" data-group="websearch" data-value="offline">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></div>
+            <div class="opt-text">
+              <div class="opt-title">Offline Mode</div>
+              <div class="opt-desc">Use only the model's basic knowledge without searching the web</div>
+            </div>
+            <svg class="opt-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <div class="opt-card" data-select="agent" data-group="websearch" data-value="smart">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></svg></div>
+            <div class="opt-text">
+              <div class="opt-title">Smart Online Mode</div>
+              <div class="opt-desc">Intelligently determine whether a search is needed to answer</div>
+            </div>
+            <svg class="opt-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+        </div>
+
+        <div class="screen-pane" data-pane="effort">
+          <div class="sub-header">
+            <div class="back-btn" data-back><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></div>
+            <div class="sub-title">Effort</div>
+          </div>
+          <div class="opt-flat" data-select="agent" data-group="effort" data-value="low">
+            <div class="opt-title">Low</div>
+            <svg class="opt-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <div class="opt-flat" data-select="agent" data-group="effort" data-value="medium">
+            <div class="opt-title-row"><div class="opt-title">Medium</div><span class="badge">Default</span></div>
+            <svg class="opt-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <div class="opt-flat" data-select="agent" data-group="effort" data-value="high">
+            <div class="opt-title">High</div>
+            <svg class="opt-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <div class="opt-flat" data-select="agent" data-group="effort" data-value="extra">
+            <div class="opt-title">Extra</div>
+            <svg class="opt-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <div class="opt-flat" data-select="agent" data-group="effort" data-value="max">
+            <div class="opt-title-row"><div class="opt-title">Max</div><span class="badge amber">3.5x or more usage</span></div>
+            <svg class="opt-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <div class="opt-card">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 1 7.38 16.75"/><path d="M12 6v6l4 2"/><path d="M2.5 8.875a10 10 0 0 0-.5 3"/><path d="M2.83 16a10 10 0 0 0 2.43 3.4"/><path d="M4.636 5.235a10 10 0 0 1 .891-.857"/><path d="M8.644 21.42a10 10 0 0 0 7.631-.38"/></svg></div>
+            <div class="opt-text">
+              <div class="opt-title">Thinking</div>
+              <div class="opt-desc">Can think for more complex tasks</div>
+            </div>
+            <div class="toggle on" id="thinkingToggle"><div class="thumb"></div></div>
+          </div>
+        </div>
+
+        <div class="screen-pane" data-pane="skills">
+          <div class="sub-header">
+            <div class="back-btn" data-back><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></div>
+            <div class="sub-title">Skills</div>
+          </div>
+          <div class="opt-card" data-select="agent" data-group="skillmode" data-value="auto">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><path d="M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z"/></svg></div>
+            <div class="opt-text">
+              <div class="opt-title">Auto</div>
+              <div class="opt-desc">Automatically choose relevant skills for each task</div>
+            </div>
+            <svg class="opt-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <div class="opt-card" data-select="agent" data-group="skillmode" data-value="manual">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915z"/><circle cx="12" cy="12" r="3"/></svg></div>
+            <div class="opt-text">
+              <div class="opt-title">Manual selection</div>
+              <div class="opt-desc">Pick which skills stay available to the agent</div>
+            </div>
+            <svg class="opt-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <div class="section-label">Pinned skills</div>
+          <div class="opt-card" data-action="leaf">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></div>
+            <div class="opt-text">
+              <div class="opt-title">PDF export</div>
+              <div class="opt-desc">Generate formatted PDF reports</div>
+            </div>
+            <svg class="opt-check show" viewBox="0 0 24 24" style="stroke:#9c9c9c"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+          </div>
+          <div class="opt-card" data-action="leaf">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></div>
+            <div class="opt-text">
+              <div class="opt-title">Code review</div>
+              <div class="opt-desc">Checks diffs against your style guide</div>
+            </div>
+            <svg class="opt-check show" viewBox="0 0 24 24" style="stroke:#9c9c9c"><path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/><path d="m21 3-9 9"/><path d="M15 3h6v6"/></svg>
+          </div>
+          <div class="opt-card" data-action="leaf">
+            <div class="opt-icon"><svg viewBox="0 0 24 24"><path d="M16 10a4 4 0 0 1-8 0"/><path d="M3.103 6.034h17.794"/><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"/></svg></div>
+            <div class="opt-text">
+              <div class="opt-title">Add skills</div>
+              <div class="opt-desc">Browse the skill directory</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="composer-wrap">
+      <div class="composer-bar">
+        <div class="plus-btn" id="plusBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <div class="composer-input">Message Ajiro Agent…</div>
+        <div class="composer-right">
+          <div class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19v3"/><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/></svg></div>
+          <div class="icon-btn send-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="controls">
+  <div class="state-row"><span>Sheet state</span><span id="stateLabel">closed</span></div>
+  <div class="state-row"><span>Active section</span><span id="paneLabel">main</span></div>
+  <div class="btn-grid">
+    <button class="demo-btn" id="btnOpen">Open (tap +)</button>
+    <button class="demo-btn" id="btnResting">Snap to fitted size</button>
+    <button class="demo-btn" id="btnExpand">Snap to max height</button>
+    <button class="demo-btn" id="btnClose">Collapse / dismiss</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var sheet=document.getElementById('sheet');
+  var backdrop=document.getElementById('backdrop');
+  var handleZone=document.getElementById('handleZone');
+  var content=document.getElementById('sheetContent');
+  var plusBtn=document.getElementById('plusBtn');
+  var stateLabel=document.getElementById('stateLabel');
+  var paneLabel=document.getElementById('paneLabel');
+  var screenEl=document.querySelector('.screen');
+  var statusbarEl=document.querySelector('.statusbar');
+
+  var HANDLE_H=26;      // matches .sheet-handle-zone height
+  var MIN_H=160;         // never snap smaller than this, even for tiny panes
+  var TOP_GAP=48;        // keep this much daylight above the sheet when fully expanded
+  var MAX_H=560;         // recomputed once the screen is measured
+  var HIDDEN=0;
+
+  var currentPane='main';
+  var paneHeights={};    // cache: pane name -> natural content height (measured)
+  var currentRestH=380;  // the "fitted" height for whichever pane is active
+
+  var height=HIDDEN, targetH=HIDDEN, vel=0, raf=null;
+  var dragging=false, dragMode=null, startY=0, startHeight=0, samples=[];
+
+  // ---- measure each pane's real, rendered content height so the sheet ----
+  // ---- can size itself to fit however many rows a section contains.  ----
+  function measurePane(name){
+    var original=document.querySelector('.screen-pane[data-pane="'+name+'"]');
+    if(!original) return 300;
+    var clone=original.cloneNode(true);
+    clone.classList.add('active');
+    clone.style.position='absolute';
+    clone.style.visibility='hidden';
+    clone.style.pointerEvents='none';
+    clone.style.left='0';
+    clone.style.top='0';
+    clone.style.width=content.clientWidth+'px';
+    content.appendChild(clone);
+    var h=clone.scrollHeight;
+    content.removeChild(clone);
+    return h;
+  }
+
+  function recomputeBounds(){
+    var screenH=screenEl.clientHeight;
+    var statusH=statusbarEl.offsetHeight;
+    MAX_H=Math.max(MIN_H+60, screenH-statusH-TOP_GAP);
+  }
+
+  function fittedHeightFor(name){
+    var contentH=paneHeights[name]!=null?paneHeights[name]:300;
+    var wanted=contentH+HANDLE_H+24; // + handle zone + sheet-content bottom padding
+    return Math.min(MAX_H, Math.max(MIN_H, wanted));
+  }
+
+  function cacheAllPaneHeights(){
+    document.querySelectorAll('.screen-pane').forEach(function(p){
+      paneHeights[p.getAttribute('data-pane')]=measurePane(p.getAttribute('data-pane'));
+    });
+  }
+
+  function setHeight(h){
+    height=Math.max(0,h);
+    sheet.style.height=height+'px';
+    backdrop.style.opacity=Math.min(1,height/(currentRestH||380)*0.85);
+    backdrop.classList.toggle('show', height>1);
+  }
+
+  function label(){
+    if(!dragging && height<=0.5) return 'closed';
+    if(dragging) return 'dragging';
+    if(Math.abs(height-currentRestH)<2) return 'fitted';
+    if(Math.abs(height-MAX_H)<2) return 'max';
+    return 'settling';
+  }
+  function updateLabel(){ stateLabel.textContent=label(); paneLabel.textContent=currentPane; }
+
+  function animateTo(target, initialVel){
+    targetH=target;
+    vel=initialVel||0;
+    if(raf) cancelAnimationFrame(raf);
+    var last=performance.now();
+    var stiffness=230, damping=28;
+    function step(now){
+      var dt=Math.min((now-last)/1000,0.032);
+      last=now;
+      var fSpring=-stiffness*(height-targetH);
+      var fDamp=-damping*vel;
+      var accel=fSpring+fDamp;
+      vel+=accel*dt;
+      var next=height+vel*dt;
+      setHeight(next);
+      updateLabel();
+      if(Math.abs(next-targetH)<0.6 && Math.abs(vel)<8){
+        setHeight(targetH);
+        raf=null;
+        updateLabel();
+        return;
+      }
+      raf=requestAnimationFrame(step);
+    }
+    raf=requestAnimationFrame(step);
+  }
+
+  function pushSample(h){
+    var t=performance.now();
+    samples.push({t:t,h:h});
+    while(samples.length && t-samples[0].t>120) samples.shift();
+  }
+  function velocityFromSamples(){
+    if(samples.length<2) return 0;
+    var a=samples[0], b=samples[samples.length-1];
+    var dt=(b.t-a.t)/1000;
+    if(dt<=0) return 0;
+    return (b.h-a.h)/dt;
+  }
+
+  function onPointerDown(e, zone){
+    dragging=false; dragMode=(zone==='free')?null:'sheet';
+    startY=e.clientY; startHeight=height; samples=[]; pushSample(height);
+    if(raf){cancelAnimationFrame(raf); raf=null;}
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+  }
+
+  function onPointerMove(e){
+    var dy=e.clientY-startY;
+    if(dragMode===null){
+      var atTop = content.scrollTop<=0;
+      if(dy>0 && atTop){ dragMode='sheet'; startY=e.clientY; startHeight=height; }
+      else if(dy<0 && height<MAX_H-1 && atTop){ dragMode='sheet'; startY=e.clientY; startHeight=height; }
+      else { dragMode='content'; return; }
+    }
+    if(dragMode==='content') return;
+    e.preventDefault();
+    if(!dragging){ dragging=true; sheet.classList.add('dragging'); content.style.overflowY='hidden'; updateLabel(); }
+    var raw=startHeight-dy;
+    var h;
+    if(raw>MAX_H){ h=MAX_H+(raw-MAX_H)*0.25; }
+    else if(raw<0){ h=raw*0.25; }
+    else { h=raw; }
+    setHeight(h);
+    pushSample(h);
+  }
+
+  function onPointerUp(e){
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+    window.removeEventListener('pointercancel', onPointerUp);
+    if(dragMode!=='sheet'){ dragMode=null; return; }
+    dragging=false;
+    sheet.classList.remove('dragging');
+    content.style.overflowY='auto';
+    var v=velocityFromSamples();
+    var projected=height+v*0.12;
+    var target;
+    var flingDown = v<-900;
+    var flingUp = v>900;
+    if(flingDown && height<currentRestH*1.15){ target=HIDDEN; }
+    else if(flingUp){ target=MAX_H; }
+    else {
+      var dHidden=Math.abs(projected-HIDDEN);
+      var dRest=Math.abs(projected-currentRestH);
+      var dExp=Math.abs(projected-MAX_H);
+      if(dHidden<=dRest && dHidden<=dExp && height<currentRestH*0.55){ target=HIDDEN; }
+      else if(dExp<dRest){ target=MAX_H; }
+      else { target=currentRestH; }
+    }
+    animateTo(target, v);
+    dragMode=null;
+  }
+
+  handleZone.addEventListener('pointerdown', function(e){ onPointerDown(e,'zone'); });
+  content.addEventListener('pointerdown', function(e){ onPointerDown(e,'free'); });
+
+  function openSheet(){
+    setHeight(0);
+    animateTo(currentRestH, 900);
+  }
+  function closeSheet(){ animateTo(HIDDEN, 0); }
+
+  plusBtn.addEventListener('click', function(){
+    if(height>0.5){ closeSheet(); } else { openSheet(); }
+  });
+  backdrop.addEventListener('click', closeSheet);
+
+  document.getElementById('btnOpen').addEventListener('click', openSheet);
+  document.getElementById('btnResting').addEventListener('click', function(){ animateTo(currentRestH,0); });
+  document.getElementById('btnExpand').addEventListener('click', function(){ animateTo(MAX_H,0); });
+  document.getElementById('btnClose').addEventListener('click', closeSheet);
+
+  var panes=document.querySelectorAll('.screen-pane');
+  function showPane(name){
+    currentPane=name;
+    panes.forEach(function(p){ p.classList.toggle('active', p.getAttribute('data-pane')===name); });
+    content.scrollTop=0;
+    currentRestH=fittedHeightFor(name);
+    // If the sheet is already open, resize it to fit the new section instead
+    // of leaving stale empty space or clipping the new section's rows.
+    if(height>0.5){ animateTo(currentRestH, 0); }
+    updateLabel();
+  }
+  document.querySelectorAll('[data-goto]').forEach(function(el){
+    el.addEventListener('click', function(){ showPane(el.getAttribute('data-goto')); });
+  });
+  document.querySelectorAll('[data-back]').forEach(function(el){
+    el.addEventListener('click', function(){ showPane('main'); });
+  });
+  document.querySelectorAll('[data-action="leaf"]').forEach(function(el){
+    el.addEventListener('click', function(){
+      el.style.opacity='0.55';
+      setTimeout(function(){ el.style.opacity='1'; closeSheet(); showPane('main'); }, 140);
+    });
+  });
+
+  document.querySelectorAll('[data-select]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var group=el.getAttribute('data-group');
+      var groupEls=document.querySelectorAll('[data-group="'+group+'"]');
+      groupEls.forEach(function(g){
+        var isMe=(g===el);
+        var check=g.querySelector('.opt-check');
+        var icon=g.querySelector('.opt-icon');
+        var title=g.querySelector('.opt-title');
+        if(check) check.classList.toggle('show', isMe);
+        if(icon) icon.classList.toggle('active', isMe);
+        if(title){
+          title.classList.toggle('label-medium', isMe);       // Medium weight on the selected item's label
+          title.classList.toggle('selected', isMe && !icon);   // accent color only where there's no icon container to carry the state (Effort)
+        }
+      });
+    });
+  });
+
+  var defaultSelections=[
+    ['agentmode','agent'], ['approvalmode','manual'], ['websearch','smart'], ['effort','medium'], ['skillmode','auto']
+  ];
+  defaultSelections.forEach(function(pair){
+    var el=document.querySelector('[data-group="'+pair[0]+'"][data-value="'+pair[1]+'"]');
+    if(el){
+      var check=el.querySelector('.opt-check');
+      var icon=el.querySelector('.opt-icon');
+      var title=el.querySelector('.opt-title');
+      if(check) check.classList.add('show');
+      if(icon) icon.classList.add('active');
+      if(title){
+        title.classList.add('label-medium');
+        if(!icon) title.classList.add('selected');
+      }
+    }
+  });
+
+  var thinkingToggle=document.getElementById('thinkingToggle');
+  thinkingToggle.addEventListener('click', function(e){
+    e.stopPropagation();
+    thinkingToggle.classList.toggle('on');
+  });
+
+  // ---- init: measure real content once laid out, then whenever fonts ----
+  // ---- finish swapping in (Nunito), since that can shift row heights. ----
+  function init(){
+    recomputeBounds();
+    cacheAllPaneHeights();
+    currentRestH=fittedHeightFor(currentPane);
+    updateLabel();
+  }
+  init();
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(function(){
+      recomputeBounds();
+      cacheAllPaneHeights();
+      currentRestH=fittedHeightFor(currentPane);
+      if(height>0.5){ animateTo(currentRestH,0); }
+    });
+  }
+  window.addEventListener('resize', function(){
+    recomputeBounds();
+    cacheAllPaneHeights();
+    currentRestH=fittedHeightFor(currentPane);
+  });
+})();
+</script>
+
+</body>
+</html>
