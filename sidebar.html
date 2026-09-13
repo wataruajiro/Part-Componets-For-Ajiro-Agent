@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ajiro Agent — Sidebar</title>
+<style>
+  :root {
+    --bg: #000000;
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255,255,255,0.55);
+    --text-muted: rgba(255,255,255,0.38);
+    --row-hover: rgba(255,255,255,0.06);
+    --circle-bg: #1a1a1a;
+    --circle-border: rgba(255,255,255,0.12);
+    --accent-blue: #3b82f6;
+    --divider: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    font-family: "OpenAI Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .phone-frame {
+    width: 390px;
+    max-width: 100%;
+    height: 844px;
+    margin: 0 auto;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+  .status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px 0;
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .status-right { display: flex; align-items: center; gap: 6px; }
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 20px 18px;
+  }
+  .header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    letter-spacing: -0.3px;
+  }
+  .icon-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--circle-bg);
+    border: 1px solid var(--circle-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .icon-circle svg { width: 18px; height: 18px; }
+  .main-menu { padding: 4px 12px 8px; }
+  .menu-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 11px 12px;
+    border-radius: 12px;
+  }
+  .menu-row:active { background: var(--row-hover); }
+  .menu-row svg { width: 22px; height: 22px; flex-shrink: 0; }
+  .menu-row span { font-size: 16px; color: var(--text-primary); font-weight: 500; }
+  .section {
+    padding: 18px 20px 6px;
+  }
+  .section-label {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin: 0 0 6px;
+  }
+  .pinned-row, .recent-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 9px 0;
+  }
+  .pinned-row svg, .recent-row svg { width: 22px; height: 22px; flex-shrink: 0; }
+  .pinned-row span, .recent-row span {
+    font-size: 16px;
+    color: var(--text-primary);
+    font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .spacer { flex: 1; }
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 26px;
+  }
+  .chat-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--accent-blue);
+    color: #ffffff;
+    border: none;
+    border-radius: 24px;
+    padding: 12px 22px;
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .chat-btn svg { width: 19px; height: 19px; stroke: #ffffff; }
+  .settings-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--circle-bg);
+    border: 1px solid var(--circle-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .settings-circle svg { width: 20px; height: 20px; }
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+
+  <div class="status-bar">
+    <span>12:49</span>
+    <div class="status-right">
+      <span style="font-size:11px; font-weight:500;">4G</span>
+      <span style="font-size:11px; font-weight:600; background:#fff; color:#000; border-radius:3px; padding:1px 4px;">37</span>
+    </div>
+  </div>
+
+  <div class="header">
+    <h1>Ajiro Agent</h1>
+    <div class="icon-circle" aria-label="Search">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+    </div>
+  </div>
+
+  <div class="main-menu">
+    <div class="menu-row">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="18" x="3" y="3" rx="1"/><path d="M7 3v18"/><path d="M20.4 18.9c.2.5-.1 1.1-.6 1.3l-1.9.7c-.5.2-1.1-.1-1.3-.6L11.1 5.1c-.2-.5.1-1.1.6-1.3l1.9-.7c.5-.2 1.1.1 1.3.6Z"/></svg>
+      <span>Library</span>
+    </div>
+    <div class="menu-row">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l-4 2"/></svg>
+      <span>Scheduled</span>
+    </div>
+    <div class="menu-row">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.35 15.6c1.65 1.65 6.65 1.4 6.65-3.6a10 10 0 1 0-3.92 7.94"/><path d="m8.29 10.66 2.12 2.12"/><path d="m10.41 8.54 2.12 2.12"/><path d="m10.41 14.9-1.06-1.06 4.24-4.24 1.06 1.06a3 3 0 1 1-4.24 4.24Z"/></svg>
+      <span>Plugins</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-label">Pinned</p>
+    <div class="pinned-row">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/></svg>
+      <span>Grammar fix request</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-label">Recents</p>
+    <div class="recent-row">
+      <span>Corrected prompt grammar</span>
+    </div>
+    <div class="recent-row">
+      <span>Create composer modal proto…</span>
+    </div>
+    <div class="recent-row">
+      <span>Ajiro mobile fonts</span>
+    </div>
+    <div class="recent-row">
+      <span>Sidebar redesign spec</span>
+    </div>
+    <div class="recent-row">
+      <span>Bot response tuning</span>
+    </div>
+    <div class="recent-row">
+      <span>New chat prompt</span>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <div class="footer">
+    <button class="chat-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg>
+      Chat
+    </button>
+    <div class="settings-circle" aria-label="Settings">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
