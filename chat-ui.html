@@ -42,11 +42,12 @@
   /* ---------- Top bar ---------- */
   .nav-circle {
     position: absolute;
-    top: 130px;
-    width: 125px;
-    height: 125px;
+    top: 112px;
+    width: 154px;
+    height: 154px;
     border-radius: 9999px;
     background: #212121;
+    border: 2px solid #424242;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -55,7 +56,7 @@
   .nav-circle.left  { left: 42px; }
   .nav-circle.right { right: 42px; }
 
-  .nav-circle svg { width: 46px; height: 46px; display: block; }
+  .nav-circle svg { width: 76px; height: 76px; display: block; }
 
   /* ---------- Center empty-state content ---------- */
   .content {
@@ -177,23 +178,25 @@
        than a fixed pixel margin, per spec:
        composerWidth = screenWidth * 0.811
        horizontalMargin = screenWidth * 0.0945
-       At 1260px this resolves to ~119px | ~1022px | ~119px. */
+       At 1260px this resolves to ~119px | ~1022px | ~119px — an exact
+       match to the reference photo measured directly (119 / 1022 / 119). */
     position: absolute;
     left: 9.45%;
     right: 9.45%;
-    bottom: 90px;
-    height: 155px;
+    bottom: 119px;
+    height: 168px;
     border-radius: 9999px;
     background: #212121;
+    border: 2px solid #424242;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 17.5px;
+    padding: 0 34px 0 26px;
   }
 
   .plus-action {
-    width: 120px;
-    height: 120px;
+    width: 112px;
+    height: 112px;
     border-radius: 9999px;
     background: transparent;
     display: flex;
@@ -209,7 +212,7 @@
     background: #2A2A2A;
   }
 
-  .plus-action svg { width: 44px; height: 44px; display: block; }
+  .plus-action svg { width: 93px; height: 93px; display: block; }
 
   .capsule-middle {
     flex: 1;
@@ -239,15 +242,15 @@
   .capsule-right {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 83px;
     flex-shrink: 0;
   }
 
-  .mic-icon svg { width: 42px; height: 42px; display: block; }
+  .mic-icon svg { width: 84px; height: 84px; display: block; }
 
   .send-btn {
-    width: 120px;
-    height: 120px;
+    width: 112px;
+    height: 112px;
     border-radius: 9999px;
     display: flex;
     align-items: center;
@@ -258,8 +261,8 @@
   }
 
   .send-btn svg {
-    width: 46px;
-    height: 46px;
+    width: 56px;
+    height: 56px;
     display: block;
     stroke: #8E8E93;
     transition: stroke 0.15s ease;
@@ -352,7 +355,7 @@
         </div>
 
         <div class="send-btn" id="sendBtn">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14"/><path d="M18 11l-6 -6"/><path d="M6 11l6 -6"/></svg>
         </div>
       </div>
 
